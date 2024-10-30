@@ -1,0 +1,13 @@
+diff --git a/c/game_of_life/main.c b/c/game_of_life/main.c
+index 98d554f..6ee18f9 100644
+--- a/c/game_of_life/main.c
++++ b/c/game_of_life/main.c
+@@ -114,7 +114,7 @@ int main(int argc, char *argv[]){
+     draw_matrix(matrix, height, startx+1, starty);
+     while(1){
+         mvprintw(starty-1, startx+(height)-27, "Press Enter to continuously or Space to run gen by gen!");
+-        opt = getch();
++        opt = '\n';
+         mvprintw(starty-1, startx+(height)-27, "                                                       ");
+         if(opt == ' ' || opt == '\n'){
+             if(opt == ' ')
