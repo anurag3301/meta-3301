@@ -18,6 +18,8 @@ IMAGE_INSTALL = " \
     localedef \
     glibc-localedata-en-us \
     shellprofile \
+    shadow \
+    util-linux-agetty \
 "
 
 GLIBC_GENERATE_LOCALES = "en_US.UTF-8"
@@ -40,4 +42,13 @@ LANGUAGE=en_US.UTF-8
 EOF
 }
 
-ROOTFS_POSTPROCESS_COMMAND += "set_locale_postinst;"
+
+set_autologin() {
+    # Ensure the default runlevel is set to 3
+    sed -i 's/^id:.*:initdefault:/id:3:initdefault:/' ${IMAGE_ROOTFS}/etc/inittab
+
+    # Modify the getty line for tty1 to use agetty with auto-login
+    sed -i 's#^\([1-9]\):.*respawn:/.*getty.*tty1#1:12345:respawn:/sbin/agetty --autologin root --noclear tty1#' ${IMAGE_ROOTFS}/etc/inittab
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "set_locale_postinst; set_autologin;"
