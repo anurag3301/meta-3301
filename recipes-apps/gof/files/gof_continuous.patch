@@ -1,5 +1,5 @@
 diff --git a/c/game_of_life/main.c b/c/game_of_life/main.c
-index 98d554f..6ee18f9 100644
+index 98d554f..53e3762 100644
 --- a/c/game_of_life/main.c
 +++ b/c/game_of_life/main.c
 @@ -114,7 +114,7 @@ int main(int argc, char *argv[]){
@@ -11,3 +11,11 @@ index 98d554f..6ee18f9 100644
          mvprintw(starty-1, startx+(height)-27, "                                                       ");
          if(opt == ' ' || opt == '\n'){
              if(opt == ' ')
+@@ -130,6 +130,7 @@ int main(int argc, char *argv[]){
+         refresh();
+         if(opt == ' ')mvgetch(0, 0);
+         else delay_output(50);
++        napms(100);
+     }
+ 
+     destroy_matrix(matrix, height);
