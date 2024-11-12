@@ -5,8 +5,9 @@ inherit core-image
 
 IMAGE_FEATURES += "package-management"
 
-EXTRA_IMAGE_FEATURES += "tools-sdk"
-EXTRA_IMAGE_FEATURES += "debug-tweaks"
+EXTRA_IMAGE_FEATURES += "tools-sdk debug-tweaks"
+
+DISTRO_FEATURES += " wifi"
 
 IMAGE_INSTALL = " \
     packagegroup-core-boot \
@@ -20,6 +21,22 @@ IMAGE_INSTALL = " \
     shellprofile \
     shadow \
     util-linux-agetty \
+    openssh \
+    bluez5 \
+    i2c-tools \
+    python3-smbus \
+    bridge-utils \
+    hostapd \
+    dhcpcd \
+    iptables \
+    wpa-supplicant \
+    linux-firmware \
+    linux-firmware-rpidistro-bcm43430 \
+    pciutils \
+    networkmanager \
+    kernel-module-brcmfmac \
+    packagegroup-base-wifi \
+    kernel-modules \
 "
 
 GLIBC_GENERATE_LOCALES = "en_US.UTF-8"
@@ -42,13 +59,10 @@ LANGUAGE=en_US.UTF-8
 EOF
 }
 
-
 set_autologin() {
-    # Ensure the default runlevel is set to 3
     sed -i 's/^id:.*:initdefault:/id:3:initdefault:/' ${IMAGE_ROOTFS}/etc/inittab
-
-    # Modify the getty line for tty1 to use agetty with auto-login
     sed -i 's#^\([1-9]\):.*respawn:/.*getty.*tty1#1:12345:respawn:/sbin/agetty --autologin root --noclear tty1#' ${IMAGE_ROOTFS}/etc/inittab
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "set_locale_postinst; set_autologin;"
+
