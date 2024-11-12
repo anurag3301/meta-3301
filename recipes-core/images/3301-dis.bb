@@ -26,14 +26,12 @@ IMAGE_INSTALL = " \
     i2c-tools \
     python3-smbus \
     bridge-utils \
-    hostapd \
     dhcpcd \
     iptables \
     wpa-supplicant \
     linux-firmware \
     linux-firmware-rpidistro-bcm43430 \
     pciutils \
-    networkmanager \
     kernel-module-brcmfmac \
     packagegroup-base-wifi \
     kernel-modules \
