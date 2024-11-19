@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# chkconfig: 35 90 12
+# description: Starts the wifi network
+#
+
+# Import functions library
+. /etc/init.d/functions
+
+start() {
+    echo -n "Starting wlan: "
+    if command -v ifup &>/dev/null; then
+        ifup wlan0 &
+        touch /var/lock/subsys/wifi
+        success $"Wlan startup"
+    else
+        echo "ifup command not found."
+        failure $"Wlan startup"
+    fi
+    echo
+}
+
+stop() {
+    echo -n "Stopping wlan: "
+    if command -v ifdown &>/dev/null; then
+        ifdown wlan0
+        rm -f /var/lock/subsys/wifi
+        success $"Wlan shutdown"
+    else
+        echo "ifdown command not found."
+        failure $"Wlan shutdown"
+    fi
+    echo
+}
+
+status() {
+    if ip link show wlan0 | grep -q "state UP"; then
+        echo "wlan0 is up and running"
+    else
+        echo "wlan0 is down"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart|reload|condrestart)
+        stop
+        start
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
