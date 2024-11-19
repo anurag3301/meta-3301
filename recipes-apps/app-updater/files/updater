@@ -1,0 +1,37 @@
+#!/bin/bash
+SERVER="192.168.0.123:5000"
+
+imgfetch(){
+    curl --silent $SERVER/app --output $HOME/app.img.new
+    echo "Image fetched!! "
+    local_sum=$(md5sum $HOME/app.img.new | awk '{print $1}')
+    upstream_sum=$(curl --silent $SERVER/appinfo | jq '.["md5sum"]' | sed 's/^"//;s/"$//')
+    echo "local:$local_sum  upstream:$upstream_sum"
+    if [ "$local_sum" = "$upstream_sum" ]; then
+        echo "checksum match, overwriting"
+        mv $HOME/app.img.new $HOME/app.img
+        service loopmount restart 
+    else
+        echo "checksum mismatch, discarding"
+        rm -rf $HOME/app.img.new
+    fi
+}
+
+if [ ! -e "$HOME/app.img" ]; then
+    echo "appimage found, fetching appimage"
+    imgfetch
+elif [ ! -e "/app/etc/info.json" ]; then 
+    echo "info.json not found, probably appimage not mounted"
+    service loopmount restart 
+else
+    echo "Checking if new version is available"
+    upstream_version=$(curl --silent $SERVER/appinfo | jq '.["version"]')
+    local_version=$(cat /app/etc/info.json | jq '.["version"]')
+    if awk "BEGIN {exit !($upstream_version > $local_version)}"; then
+        echo "$upstream_version version available, fetching and remounting"
+        imgfetch
+        service loopmount restart 
+    else
+        echo "Newer version not available"
+    fi
+fi
