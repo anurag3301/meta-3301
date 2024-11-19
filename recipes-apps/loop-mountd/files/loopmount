@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# chkconfig: 35 90 12
+# description: Mounts the loopback devices
+#
+
+# Import functions library
+. /etc/init.d/functions
+
+start() {
+    echo -n "Mounting app"
+    mount -o loop /home/root/app.img /app
+    echo -n "App mounted"
+    echo
+}
+
+stop() {
+    echo -n "Unmounting app"
+    umount /app
+    echo -n "App unmounted"
+    echo
+}
+
+status() {
+    result=$(mount | grep app.img)
+    if [ -n "$result" ]; then
+        echo $result
+    else
+        echo "No mount found"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart|reload|condrestart)
+        stop
+        start
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
