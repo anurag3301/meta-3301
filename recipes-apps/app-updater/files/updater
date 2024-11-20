@@ -1,37 +1,83 @@
 #!/bin/bash
 SERVER="192.168.0.123:5000"
 
-imgfetch(){
-    curl --silent $SERVER/app --output $HOME/app.img.new
-    echo "Image fetched!! "
-    local_sum=$(md5sum $HOME/app.img.new | awk '{print $1}')
-    upstream_sum=$(curl --silent $SERVER/appinfo | jq '.["md5sum"]' | sed 's/^"//;s/"$//')
-    echo "local:$local_sum  upstream:$upstream_sum"
-    if [ "$local_sum" = "$upstream_sum" ]; then
-        echo "checksum match, overwriting"
-        mv $HOME/app.img.new $HOME/app.img
-        service loopmount restart 
-    else
-        echo "checksum mismatch, discarding"
-        rm -rf $HOME/app.img.new
+check_connectivity() {
+    if ! ping -c 1 -W 2 "$(echo $SERVER | cut -d':' -f1)" > /dev/null 2>&1; then
+        echo "Error: Cannot reach the server ($SERVER). Check your internet connection or server availability."
+        exit 1
     fi
 }
 
-if [ ! -e "$HOME/app.img" ]; then
-    echo "appimage found, fetching appimage"
-    imgfetch
-elif [ ! -e "/app/etc/info.json" ]; then 
-    echo "info.json not found, probably appimage not mounted"
-    service loopmount restart 
-else
-    echo "Checking if new version is available"
-    upstream_version=$(curl --silent $SERVER/appinfo | jq '.["version"]')
-    local_version=$(cat /app/etc/info.json | jq '.["version"]')
-    if awk "BEGIN {exit !($upstream_version > $local_version)}"; then
-        echo "$upstream_version version available, fetching and remounting"
-        imgfetch
-        service loopmount restart 
-    else
-        echo "Newer version not available"
+imgfetch() {
+    echo "Fetching image from $SERVER..."
+    if ! curl --silent --fail "$SERVER/app" --output "$HOME/app.img.new"; then
+        echo "Error: Failed to fetch image from $SERVER."
+        exit 1
     fi
-fi
+
+    echo "Image fetched successfully."
+    local_sum=$(md5sum "$HOME/app.img.new" | awk '{print $1}')
+    upstream_sum=$(curl --silent --fail "$SERVER/appinfo" | jq -r '.["md5sum"]' 2>/dev/null)
+
+    if [ -z "$upstream_sum" ]; then
+        echo "Error: Failed to retrieve checksum from server."
+        rm -f "$HOME/app.img.new"
+        exit 1
+    fi
+
+    echo "Local checksum: $local_sum"
+    echo "Upstream checksum: $upstream_sum"
+
+    if [ "$local_sum" = "$upstream_sum" ]; then
+        echo "Checksum match. Updating image."
+        mv "$HOME/app.img.new" "$HOME/app.img"
+        if service loopmount restart; then
+            echo "Service restarted successfully."
+        else
+            echo "Error: Failed to restart loopmount service."
+            exit 1
+        fi
+    else
+        echo "Checksum mismatch. Discarding downloaded image."
+        rm -f "$HOME/app.img.new"
+        exit 1
+    fi
+}
+
+main() {
+    check_connectivity
+
+    if [ ! -e "$HOME/app.img" ]; then
+        echo "App image not found. Fetching a new image."
+        imgfetch
+    elif [ ! -e "/app/etc/info.json" ]; then
+        echo "info.json not found. Attempting to remount."
+        if service loopmount restart; then
+            echo "Service restarted successfully."
+        else
+            echo "Error: Failed to restart loopmount service."
+            exit 1
+        fi
+    else
+        echo "Checking for newer version..."
+        upstream_version=$(curl --silent --fail "$SERVER/appinfo" | jq -r '.["version"]' 2>/dev/null)
+        local_version=$(jq -r '.["version"]' < /app/etc/info.json 2>/dev/null)
+
+        if [ -z "$upstream_version" ] || [ -z "$local_version" ]; then
+            echo "Error: Failed to retrieve version information."
+            exit 1
+        fi
+
+        echo "Local version: $local_version"
+        echo "Upstream version: $upstream_version"
+
+        if awk "BEGIN {exit !($upstream_version > $local_version)}"; then
+            echo "New version ($upstream_version) available. Fetching and updating."
+            imgfetch
+        else
+            echo "No newer version available."
+        fi
+    fi
+}
+
+main
