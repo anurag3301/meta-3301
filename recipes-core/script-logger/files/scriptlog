@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if [ $# -lt 5 ]; then
+echo "Invalid call. Call as:"
+echo "$0 LOG_DIR LOG_FILE_NAME WORKER_CWD WORKER_DIR WORKER_SCRIPT"
+echo "LOG_DIR:          The Directory where the log file will sit."
+echo "LOG_FILE_NAME:    Name of the Log file"
+echo "WORKER_CWD:       Working Directory where the script will be executed"
+echo "WORKER_DIR:       Directory where the worker script is located"
+echo "WORKER_SCRIPT:    File name of the worker script"
+exit
+fi
+
+
+
+# LOG_DIR=/tmp/
+# LOG_FILE_NAME=uploadLog.tx
+# WORKER_CWD=/tmp/
+# WORKER_DIR=/tmp
+# WORKER_SCRIPT=curl-test.sh
+
+LOG_DIR=$1
+LOG_FILE_NAME=$2
+WORKER_CWD=$3
+WORKER_DIR=$4
+WORKER_SCRIPT=$5
+
+DT=$(date +%F_%H.%M)
+SCRIPT_PWD=${PWD}
+LOG_FILE=${LOG_DIR}/${LOG_FILE_NAME}
+
+function do_work() {
+    /bin/bash $1
+}
+
+
+echo "[${DT}] Starting ${WORKER_SCRIPT}" >> ${LOG_FILE}
+cd ${WORKER_CWD}
+do_work ${WORKER_DIR}/${WORKER_SCRIPT} >> ${LOG_FILE}
+cd ${SCRIPT_PWD}
+echo "[${DT}] Run finished." >> ${LOG_FILE}
+echo "----------------" >> ${LOG_FILE}
